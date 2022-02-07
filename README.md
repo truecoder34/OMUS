@@ -18,3 +18,9 @@ For now - planned only API.
 2) [GET] - check if short link already exists for specified URL;
 3) [GET] - get statistics about short link : EOL date, redirects, calls;
 4) [GET] - redirect to original URL by passing a short one;
+
+## Tech Stack
+1) Initially will be Postgress USED
+2) Try to use Redis instead
+3) RabbitMQ msg-broker to log events of API
+
