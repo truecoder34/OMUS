@@ -1,7 +1,7 @@
 package main
 
 import (
-	"OMUS/server/helper"
+	helper "OMUS/server/helpers"
 	"log"
 )
 
