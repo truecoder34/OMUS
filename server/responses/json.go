@@ -6,6 +6,10 @@ import (
 	"net/http"
 )
 
+/*
+	Custom responses: JSON and ERROR
+*/
+
 func JSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	w.WriteHeader(statusCode)
 	err := json.NewEncoder(w).Encode(data)
