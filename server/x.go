@@ -1,4 +1,7 @@
-package main
+//package main
+package server
+
+//
 
 import (
 	helper "OMUS/server/helpers"
