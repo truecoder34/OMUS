@@ -9,12 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	// "io/ioutil"
-	// "net/http"
-	// "strconv"
-	// "github.com/gorilla/mux"
-	// "OMUS/server/models"
-	// "OMUS/server/responses"
 	formaterror "OMUS/server/utils"
 
 	"github.com/gorilla/mux"
@@ -69,11 +63,11 @@ func (server *Server) RedirectByShort(w http.ResponseWriter, r *http.Request) {
 	model, err := url.GetEntityByEncodedURL(server.DB, shortLink)
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
-		responses.ERROR(w, http.StatusInternalServerError, formattedError)
+		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
 		return
 	}
-	//
-	responses.JSON(w, http.StatusCreated, fmt.Sprintf("%s/%d", r.Host, model.EncodedURL))
+	// Redirect
+	http.Redirect(w, r, model.OriginalURL, http.StatusMovedPermanently)
 }
 
 /*
