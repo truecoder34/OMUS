@@ -5,6 +5,7 @@ import (
 	helper "OMUS/server/helpers"
 	"OMUS/server/seed"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -38,10 +39,40 @@ func TestMain(m *testing.M) {
 
 }
 
-func clearTable() {
-	server_test.DB.Exec("DELETE FROM public.urls")
+// TEST GET URLS
+func TestGetURLs(t *testing.T) {
+	clearTable()
+	addURLs(3)
+
+	req, _ := http.NewRequest("GET", "/urls", nil)
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
 }
 
+// TEST GET URL BY ID
+func TestGetURL(t *testing.T) {
+	clearTable()
+	addURLs(1)
+
+	req, _ := http.NewRequest("GET", "/urls", nil)
+	response := executeRequest(req)
+
+	bodyBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// TODO : specify id here
+	for _, id := range bodyBytes {
+		req, _ := http.NewRequest("GET", "/urls/"+string(id), nil)
+		response := executeRequest(req)
+		checkResponseCode(t, http.StatusOK, response.Code)
+	}
+
+}
+
+// TEST THAT DB IS EMPTY
 func TestEmptyTable(t *testing.T) {
 	clearTable()
 
@@ -55,6 +86,7 @@ func TestEmptyTable(t *testing.T) {
 	}
 }
 
+// DELETE RECENTLY ADDED URLS TEST
 func TestDeleteProduct(t *testing.T) {
 	clearTable()
 	addURLs(3)
@@ -63,6 +95,22 @@ func TestDeleteProduct(t *testing.T) {
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
+	bodyBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// ATTENTION HERE. Need to find way to specify ID
+	for _, url := range bodyBytes {
+		req, _ = http.NewRequest("DELETE", "/urls/"+string(url), nil)
+		response = executeRequest(req)
+		checkResponseCode(t, http.StatusOK, response.Code)
+	}
+
+}
+
+func clearTable() {
+	server_test.DB.Exec("DELETE FROM public.urls")
 }
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {
