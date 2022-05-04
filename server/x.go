@@ -1,7 +1,7 @@
 //package main
 package server
 
-//
+// previously used as main to run all
 
 import (
 	helper "OMUS/server/helpers"

@@ -7,6 +7,10 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+/*
+	Create DB entity and fill it with raw test data
+*/
+
 var urls = []models.URL{
 	models.URL{
 		OriginalURL:   "7",

@@ -52,7 +52,28 @@ func (server *Server) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host, r.URL.Path, urlCreated.ID))
+
 	responses.JSON(w, http.StatusCreated, urlCreated)
+}
+
+/*
+	[ GET ] - REDIRECT TO SHORT
+
+*/
+func (server *Server) RedirectByShort(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	shortLink := vars["encodedURL"]
+	url := models.URL{}
+
+	// Check if the URL exist
+	model, err := url.GetEntityByEncodedURL(server.DB, shortLink)
+	if err != nil {
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusInternalServerError, formattedError)
+		return
+	}
+	//
+	responses.JSON(w, http.StatusCreated, fmt.Sprintf("%s/%d", r.Host, model.EncodedURL))
 }
 
 /*
