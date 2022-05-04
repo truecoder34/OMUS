@@ -102,13 +102,6 @@ func (url *URL) GetEntityByEncodedURL(db *gorm.DB, encodedURL string) (*URL, err
 		return &URL{}, err
 	}
 
-	// if url.ID != uuid.Nil {
-	// 	err = db.Debug().Model(&URL{}).Where("id = ?", url.ID).Take(&url.ID).Error
-	// 	if err != nil {
-	// 		return &URL{}, err
-	// 	}
-	// }
-
 	return url, nil
 }
 
