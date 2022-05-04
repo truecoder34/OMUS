@@ -135,3 +135,5 @@ func addURLs(count int) {
 		server_test.DB.Exec("INSERT INTO urls(original_url, encoded_url, visits_counter) VALUES($1, $2, $3)", "URL"+strconv.Itoa(i), helper.Encode(uint64(i)), i)
 	}
 }
+
+// go test  -v
