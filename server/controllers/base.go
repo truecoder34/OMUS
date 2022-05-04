@@ -1,7 +1,7 @@
 package controllers
 
 /*
-	Here will be initializztion of DB cinnection information
+	Here will be initializztion of DB connection information
 	routes initialization
 	server start up
 */

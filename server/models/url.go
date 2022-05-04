@@ -94,6 +94,25 @@ func (url *URL) FindAllURLs(db *gorm.DB) (*[]URL, error) {
 }
 
 /*
+	Get entity by encoded URL
+*/
+func (url *URL) GetEntityByEncodedURL(db *gorm.DB, encodedURL string) (*URL, error) {
+	var err error = db.Debug().Model(&URL{}).Where("encoded_url = ?", encodedURL).Take(&url).Error
+	if err != nil {
+		return &URL{}, err
+	}
+
+	// if url.ID != uuid.Nil {
+	// 	err = db.Debug().Model(&URL{}).Where("id = ?", url.ID).Take(&url.ID).Error
+	// 	if err != nil {
+	// 		return &URL{}, err
+	// 	}
+	// }
+
+	return url, nil
+}
+
+/*
 	Get get URL note from DB by ID
 */
 func (url *URL) FindURLbyID(db *gorm.DB, pid uuid.UUID) (*URL, error) {
