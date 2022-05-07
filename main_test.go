@@ -4,7 +4,6 @@ import (
 	"OMUS/server/controllers"
 	helper "OMUS/server/helpers"
 	"OMUS/server/seed"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -25,7 +24,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Error getting env, not comming through %v", err)
 	} else {
-		fmt.Println("We are getting the env values")
+		log.Println("We are getting the env values")
 	}
 
 	server_test.Initialize(os.Getenv("DB_DRIVER"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_HOST"), os.Getenv("DB_NAME"))
@@ -52,8 +51,8 @@ func TestGetURLs(t *testing.T) {
 
 // TEST GET URL BY ID
 func TestGetURL(t *testing.T) {
-	clearTable()
-	addURLs(1)
+	// clearTable()
+	// addURLs(1)
 
 	req, _ := http.NewRequest("GET", "/urls", nil)
 	response := executeRequest(req)
@@ -110,7 +109,7 @@ func TestDeleteProduct(t *testing.T) {
 }
 
 func clearTable() {
-	server_test.DB.Exec("DELETE FROM public.urls")
+	server_test.DB.Exec("DELETE FROM urls")
 }
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {
