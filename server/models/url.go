@@ -73,10 +73,10 @@ func (url *URL) Validate() error {
 /*
 	Validate URL by existence . Check BY ENCODED URL
 */
-func (url *URL) ValidateOnExistence(db *gorm.DB, encodedURL string) bool {
+func (url *URL) ValidateOnExistence(db *gorm.DB, originalURL string) bool {
 	// GET ENTITY BY ENCODED URL
 	entity := URL{}
-	var err error = db.Debug().Model(&URL{}).Where("encoded_url = ?", encodedURL).Take(&entity).Error
+	var err error = db.Debug().Model(&URL{}).Where("original_url = ?", originalURL).Take(&entity).Error
 	if err != nil {
 		return false
 	}
@@ -116,6 +116,18 @@ func (url *URL) FindAllURLs(db *gorm.DB) (*[]URL, error) {
 */
 func (url *URL) GetEntityByEncodedURL(db *gorm.DB, encodedURL string) (*URL, error) {
 	var err error = db.Debug().Model(&URL{}).Where("encoded_url = ?", encodedURL).Take(&url).Error
+	if err != nil {
+		return &URL{}, err
+	}
+
+	return url, nil
+}
+
+/*
+	Get entity by original URL
+*/
+func (url *URL) GetEntityByOriginalURL(db *gorm.DB, originalURL string) (*URL, error) {
+	var err error = db.Debug().Model(&URL{}).Where("original_url = ?", originalURL).Take(&url).Error
 	if err != nil {
 		return &URL{}, err
 	}
