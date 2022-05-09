@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	formaterror "OMUS/server/utils"
@@ -66,6 +67,18 @@ func (server *Server) RedirectByShort(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
 		return
 	}
+
+	// Increment visits counter
+	updated_url, err := url.UpdateURL(server.DB)
+	if err != nil {
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
+		return
+	}
+
+	log.Printf(updated_url.EncodedURL)
+	//log.Default(updated_url)
+
 	// Redirect
 	http.Redirect(w, r, model.OriginalURL, http.StatusMovedPermanently)
 }
