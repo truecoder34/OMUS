@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 
 	formaterror "OMUS/server/utils"
 
@@ -39,16 +40,30 @@ func (server *Server) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urlCreated, err := url.SaveURL(server.DB)
-	if err != nil {
-		formattedError := formaterror.FormatError(err.Error())
-		responses.ERROR(w, http.StatusInternalServerError, formattedError)
-		return
+	// TODO : check if ENTITY ALREADY EXISTS. IF YES - INCREASE REGENERATES COUNTER
+	if url.ValidateOnExistence(server.DB, url.EncodedURL) {
+		// update regenerations counter
+
+		urlRes, err := url.UpdateURL(server.DB, 2)
+		if err != nil {
+			formattedError := formaterror.FormatError(err.Error())
+			responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
+			return
+		}
+		log.Printf(strconv.FormatInt(urlRes.RegeneratesCounter, 10))
+	} else {
+		urlRes, err := url.SaveURL(server.DB)
+		if err != nil {
+			formattedError := formaterror.FormatError(err.Error())
+			responses.ERROR(w, http.StatusInternalServerError, formattedError)
+			return
+		}
+
+		w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host, r.URL.Path, urlRes.ID))
+
+		responses.JSON(w, http.StatusCreated, urlRes)
 	}
 
-	w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host, r.URL.Path, urlCreated.ID))
-
-	responses.JSON(w, http.StatusCreated, urlCreated)
 }
 
 /*
@@ -69,15 +84,14 @@ func (server *Server) RedirectByShort(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Increment visits counter
-	updated_url, err := url.UpdateURL(server.DB)
+	updated_url, err := url.UpdateURL(server.DB, 1)
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
 		return
 	}
 
-	log.Printf(updated_url.EncodedURL)
-	//log.Default(updated_url)
+	log.Printf(strconv.FormatInt(updated_url.VisitsCounter, 10))
 
 	// Redirect
 	http.Redirect(w, r, model.OriginalURL, http.StatusMovedPermanently)
@@ -117,6 +131,26 @@ func (server *Server) GetURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	responses.JSON(w, http.StatusOK, urlReceived)
+}
+
+/*
+	[ GET ] get stat by short link
+*/
+func (server *Server) GetStatistics(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	shortLink := vars["encodedURL"]
+	url := models.URL{}
+
+	// Check if the URL exist
+	urlEntity, err := url.GetEntityByEncodedURL(server.DB, shortLink)
+	if err != nil {
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, urlEntity)
+
 }
 
 /*
