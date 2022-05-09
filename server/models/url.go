@@ -20,7 +20,7 @@ type Entity struct {
 	ID        uuid.UUID  `gorm:"primary_key;auto_increment" json:"id"`
 	CreatedAt time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
-	DeletedAt *time.Time `sql:"index"`
+	DeletedAt *time.Time `sql:"index" json:"deleted_at"`
 }
 
 /*
@@ -37,10 +37,11 @@ func (base *Entity) BeforeCreate(scope *gorm.Scope) error {
 */
 type URL struct {
 	Entity
-	OriginalURL   string    `gorm:"size:255;not null;unique" json:"originalURL"`
-	EncodedURL    string    `gorm:"size:255;not null;unique" json:"encodedURL"`
-	EOL           time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"eol"`
-	VisitsCounter int64     `gorm:"not null;default:0" json:"visitsCounter"`
+	OriginalURL        string    `gorm:"size:255;not null;unique" json:"originalURL"`
+	EncodedURL         string    `gorm:"size:255;not null;unique" json:"encodedURL"`
+	EOL                time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"eol"`
+	VisitsCounter      int64     `gorm:"not null;default:0" json:"visitsCounter"`
+	RegeneratesCounter int64     `gorm:"not null;default:0" json:"regeneratesCounter"`
 }
 
 /*
@@ -53,6 +54,7 @@ func (url *URL) Prepare() {
 	url.EncodedURL = strings.TrimSpace(helper.Encode(RandomIntegerwithinRange))
 	url.EOL = time.Now().Add(time.Duration(7776000) * time.Second) // life time = 90 days = 90d*24h*60m*60s = 7776000 s
 	url.VisitsCounter = 0
+	url.RegeneratesCounter = 0
 }
 
 /*
@@ -65,8 +67,24 @@ func (url *URL) Validate() error {
 	if url.EncodedURL == "" {
 		return errors.New("encoded URL data is required;")
 	}
-
 	return nil
+}
+
+/*
+	Validate URL by existence . Check BY ENCODED URL
+*/
+func (url *URL) ValidateOnExistence(db *gorm.DB, encodedURL string) bool {
+	// GET ENTITY BY ENCODED URL
+	entity := URL{}
+	var err error = db.Debug().Model(&URL{}).Where("encoded_url = ?", encodedURL).Take(&entity).Error
+	if err != nil {
+		return false
+	}
+	if (entity == URL{}) {
+		return false
+	}
+	return true
+
 }
 
 /*
@@ -124,30 +142,62 @@ func (url *URL) FindURLbyID(db *gorm.DB, pid uuid.UUID) (*URL, error) {
 }
 
 /*
-	Update required URL entity by ID
+	Update required URL entity by ID : INCREMENT  VISITS COUNTER
 */
-func (url *URL) UpdateURL(db *gorm.DB) (*URL, error) {
+func (url *URL) UpdateURL(db *gorm.DB, mode int) (*URL, error) {
 
 	url.OriginalURL = html.EscapeString(strings.TrimSpace(url.OriginalURL))
 	url.EncodedURL = html.EscapeString(strings.TrimSpace(url.EncodedURL))
 	url.EOL = time.Now().Add(time.Duration(7776000) * time.Second) // life time = 90 days = 90d*24h*60m*60s = 7776000 s
-	url.VisitsCounter += 1
+
+	if mode == 1 {
+		// redirect mode
+		url.VisitsCounter += 1
+	} else if mode == 2 {
+		// regenerate mode
+		url.RegeneratesCounter += 1
+	} else {
+		url.VisitsCounter = 0
+		url.RegeneratesCounter = 0
+	}
 
 	var err error = db.Debug().Model(&URL{}).Where("id = ?", url.ID).Updates(URL{
-		OriginalURL:   url.OriginalURL,
-		EncodedURL:    url.EncodedURL,
-		EOL:           time.Now().Add(time.Duration(7776000) * time.Second),
-		VisitsCounter: url.VisitsCounter,
+		OriginalURL:        url.OriginalURL,
+		EncodedURL:         url.EncodedURL,
+		EOL:                time.Now().Add(time.Duration(7776000) * time.Second),
+		VisitsCounter:      url.VisitsCounter,
+		RegeneratesCounter: url.RegeneratesCounter,
 	}).Error
 	if err != nil {
 		return &URL{}, err
 	}
-	// if url.ID != uuid.Nil {
-	// 	err = db.Debug().Model(&URL{}).Where("id = ?", url.ID).Take(&url.ID).Error
-	// 	if err != nil {
-	// 		return &URL{}, err
-	// 	}
-	// }
+
+	return url, nil
+}
+
+/*
+	Update required URL entity by ID : INCREMENT  VISITS COUNTER
+	Increment REGENERATIONS COUNTER
+*/
+func (url *URL) IncrementURLRegenerations(db *gorm.DB, encodedURL string) (*URL, error) {
+
+	existingURL := URL{}
+	var err error = db.Debug().Model(&URL{}).Where("encoded_url = ?", encodedURL).Take(&existingURL).Error
+	if err != nil {
+		return url, err
+	}
+
+	err = db.Debug().Model(&URL{}).Where("id = ?", existingURL.ID).Updates(URL{
+		OriginalURL:        existingURL.OriginalURL,
+		EncodedURL:         existingURL.EncodedURL,
+		EOL:                existingURL.EOL,
+		VisitsCounter:      existingURL.VisitsCounter,
+		RegeneratesCounter: existingURL.RegeneratesCounter + 1,
+	}).Error
+	if err != nil {
+		return &URL{}, err
+	}
+
 	return url, nil
 }
 
