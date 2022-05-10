@@ -4,6 +4,7 @@ import (
 	helper "OMUS/server/helpers"
 	"errors"
 	"html"
+	"log"
 	"math/rand"
 	"strings"
 	"time"
@@ -50,6 +51,7 @@ type URL struct {
 func (url *URL) Prepare() {
 	url.Entity = Entity{}
 	url.OriginalURL = html.EscapeString(strings.TrimSpace(url.OriginalURL))
+	rand.Seed(time.Now().UnixNano())
 	RandomIntegerwithinRange := rand.Uint64()
 	url.EncodedURL = strings.TrimSpace(helper.Encode(RandomIntegerwithinRange))
 	url.EOL = time.Now().Add(time.Duration(7776000) * time.Second) // life time = 90 days = 90d*24h*60m*60s = 7776000 s
@@ -129,6 +131,7 @@ func (url *URL) GetEntityByEncodedURL(db *gorm.DB, encodedURL string) (*URL, err
 func (url *URL) GetEntityByOriginalURL(db *gorm.DB, originalURL string) (*URL, error) {
 	var err error = db.Debug().Model(&URL{}).Where("original_url = ?", originalURL).Take(&url).Error
 	if err != nil {
+		log.Printf(err.Error())
 		return &URL{}, err
 	}
 
