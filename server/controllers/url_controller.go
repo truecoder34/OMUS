@@ -34,6 +34,7 @@ func (server *Server) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check if ENTITY ALREADY EXISTS. IF YES - INCREASE REGENERATES COUNTER
+	// TODO-FIX: each time adds AMP to original URL
 	model, err := url.GetEntityByOriginalURL(server.DB, url.OriginalURL)
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
@@ -44,6 +45,8 @@ func (server *Server) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 
 	if model.EncodedURL != "" {
 		// update regenerations counter
+
+		// TODO-FIX: each time adds AMP to original URL
 		urlRes, err := url.UpdateURL(server.DB, 2)
 		if err != nil {
 			formattedError := formaterror.FormatError(err.Error())
@@ -51,6 +54,7 @@ func (server *Server) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Printf(strconv.FormatInt(urlRes.RegeneratesCounter, 10))
+
 	} else {
 		url.Prepare()
 		err = url.Validate()

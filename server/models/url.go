@@ -157,11 +157,13 @@ func (url *URL) FindURLbyID(db *gorm.DB, pid uuid.UUID) (*URL, error) {
 }
 
 /*
-	Update required URL entity by ID : INCREMENT  VISITS COUNTER
+	Update required URL entity by ID : INCREMENT  VISITS COUNTER OR REDIRECTS COUNTER
+	Need separate Update method for other cases
 */
 func (url *URL) UpdateURL(db *gorm.DB, mode int) (*URL, error) {
 
-	url.OriginalURL = html.EscapeString(strings.TrimSpace(url.OriginalURL))
+	// ATTENTION : was adding some extra symbols on this stage .
+	//url.OriginalURL = html.EscapeString(strings.TrimSpace(url.OriginalURL))
 	url.EncodedURL = html.EscapeString(strings.TrimSpace(url.EncodedURL))
 	url.EOL = time.Now().Add(time.Duration(7776000) * time.Second) // life time = 90 days = 90d*24h*60m*60s = 7776000 s
 
@@ -182,32 +184,6 @@ func (url *URL) UpdateURL(db *gorm.DB, mode int) (*URL, error) {
 		EOL:                time.Now().Add(time.Duration(7776000) * time.Second),
 		VisitsCounter:      url.VisitsCounter,
 		RegeneratesCounter: url.RegeneratesCounter,
-	}).Error
-	if err != nil {
-		return &URL{}, err
-	}
-
-	return url, nil
-}
-
-/*
-	Update required URL entity by ID : INCREMENT  VISITS COUNTER
-	Increment REGENERATIONS COUNTER
-*/
-func (url *URL) IncrementURLRegenerations(db *gorm.DB, encodedURL string) (*URL, error) {
-
-	existingURL := URL{}
-	var err error = db.Debug().Model(&URL{}).Where("encoded_url = ?", encodedURL).Take(&existingURL).Error
-	if err != nil {
-		return url, err
-	}
-
-	err = db.Debug().Model(&URL{}).Where("id = ?", existingURL.ID).Updates(URL{
-		OriginalURL:        existingURL.OriginalURL,
-		EncodedURL:         existingURL.EncodedURL,
-		EOL:                existingURL.EOL,
-		VisitsCounter:      existingURL.VisitsCounter,
-		RegeneratesCounter: existingURL.RegeneratesCounter + 1,
 	}).Error
 	if err != nil {
 		return &URL{}, err
