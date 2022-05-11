@@ -33,17 +33,17 @@ func (server *Server) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url.Prepare()
-	err = url.Validate()
+	// check if ENTITY ALREADY EXISTS. IF YES - INCREASE REGENERATES COUNTER
+	model, err := url.GetEntityByOriginalURL(server.DB, url.OriginalURL)
 	if err != nil {
-		responses.ERROR(w, http.StatusUnprocessableEntity, err)
-		return
+		formattedError := formaterror.FormatError(err.Error())
+		log.Printf(formattedError.Error())
+		// responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
+		// return
 	}
 
-	// TODO : check if ENTITY ALREADY EXISTS. IF YES - INCREASE REGENERATES COUNTER
-	if url.ValidateOnExistence(server.DB, url.EncodedURL) {
+	if model.EncodedURL != "" {
 		// update regenerations counter
-
 		urlRes, err := url.UpdateURL(server.DB, 2)
 		if err != nil {
 			formattedError := formaterror.FormatError(err.Error())
@@ -52,6 +52,13 @@ func (server *Server) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf(strconv.FormatInt(urlRes.RegeneratesCounter, 10))
 	} else {
+		url.Prepare()
+		err = url.Validate()
+		if err != nil {
+			responses.ERROR(w, http.StatusUnprocessableEntity, err)
+			return
+		}
+
 		urlRes, err := url.SaveURL(server.DB)
 		if err != nil {
 			formattedError := formaterror.FormatError(err.Error())
