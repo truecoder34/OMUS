@@ -31,10 +31,11 @@ func TestMain(m *testing.M) {
 	seed.Load(server_test.DB)
 	server_test.Run(":8080")
 
-	code := m.Run()
+	//code := m.Run()
 
 	clearTable()
-	os.Exit(code)
+	//os.Exit(code)
+	os.Exit(1)
 
 }
 

@@ -34,7 +34,6 @@ func (server *Server) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check if ENTITY ALREADY EXISTS. IF YES - INCREASE REGENERATES COUNTER
-	// TODO-FIX: each time adds AMP to original URL
 	model, err := url.GetEntityByOriginalURL(server.DB, url.OriginalURL)
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
@@ -109,7 +108,7 @@ func (server *Server) RedirectByShort(w http.ResponseWriter, r *http.Request) {
 }
 
 /*
-	[ GET ] - Get all short URLs in BASE
+	[ GET ] - Get all URL entities in BASE
 */
 func (server *Server) GetURLs(w http.ResponseWriter, r *http.Request) {
 
@@ -171,6 +170,7 @@ func (server *Server) GetStatistics(w http.ResponseWriter, r *http.Request) {
 
 /*
 	[ DELETE ] - delete URL entity by ID
+	TODO-longterm: make it available only for ADMIN
 */
 func (server *Server) DeletePost(w http.ResponseWriter, r *http.Request) {
 
@@ -186,7 +186,7 @@ func (server *Server) DeletePost(w http.ResponseWriter, r *http.Request) {
 	url := models.URL{}
 	err = server.DB.Debug().Model(models.URL{}).Where("id = ?", pid).Take(&url).Error
 	if err != nil {
-		responses.ERROR(w, http.StatusNotFound, errors.New("Don't exists"))
+		responses.ERROR(w, http.StatusNotFound, errors.New("url entity with specified ID don't exists"))
 		return
 	}
 

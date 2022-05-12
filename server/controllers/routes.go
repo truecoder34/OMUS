@@ -12,7 +12,6 @@ func (s *Server) initializeRoutes() {
 	s.Router.HandleFunc("/urls", middlewares.SetMiddlewareJSON(s.CreateShortURL)).Methods("POST")
 	s.Router.HandleFunc("/urls", middlewares.SetMiddlewareJSON(s.GetURLs)).Methods("GET")
 	s.Router.HandleFunc("/urls/{id}", middlewares.SetMiddlewareJSON(s.GetURL)).Methods("GET")
-	//s.Router.HandleFunc("/urls/{id}", middlewares.SetMiddlewareJSON(s.UpdateURL)).Methods("PUT")
 	s.Router.HandleFunc("/urls/{id}", middlewares.SetMiddlewareJSON(s.DeletePost)).Methods("DELETE")
 	s.Router.HandleFunc("/redirect/{encodedURL}", middlewares.SetMiddlewareJSON(s.RedirectByShort)).Methods("GET")
 	s.Router.HandleFunc("/statistics/{encodedURL}", middlewares.SetMiddlewareJSON(s.GetStatistics)).Methods("GET")
