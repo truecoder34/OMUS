@@ -73,7 +73,7 @@ func (url *URL) Validate() error {
 }
 
 /*
-	Validate URL by existence . Check BY ENCODED URL
+	Validate URL on existence in DB via original url
 */
 func (url *URL) ValidateOnExistence(db *gorm.DB, originalURL string) bool {
 	// GET ENTITY BY ENCODED URL
@@ -157,23 +157,31 @@ func (url *URL) FindURLbyID(db *gorm.DB, pid uuid.UUID) (*URL, error) {
 }
 
 /*
-	Update required URL entity by ID : INCREMENT  VISITS COUNTER
+	Update required URL entity by ID : INCREMENT VISITS COUNTER OR REDIRECTS COUNTER
+	Modes :
+	0 - classic mode. update all entity fields
+	1 - increment visits counter
+	2 - increment regenerates counter
+	> 2 or < 0 - erase all counters and EOL . Never used.
 */
 func (url *URL) UpdateURL(db *gorm.DB, mode int) (*URL, error) {
-
-	url.OriginalURL = html.EscapeString(strings.TrimSpace(url.OriginalURL))
-	url.EncodedURL = html.EscapeString(strings.TrimSpace(url.EncodedURL))
-	url.EOL = time.Now().Add(time.Duration(7776000) * time.Second) // life time = 90 days = 90d*24h*60m*60s = 7776000 s
-
-	if mode == 1 {
+	if mode == 0 {
+		url.OriginalURL = html.EscapeString(strings.TrimSpace(url.OriginalURL))
+		url.EncodedURL = html.EscapeString(strings.TrimSpace(url.EncodedURL))
+		url.VisitsCounter = 0
+		url.RegeneratesCounter = 0
+		url.EOL = time.Now().Add(time.Duration(7776000) * time.Second)
+	} else if mode == 1 {
 		// redirect mode
 		url.VisitsCounter += 1
 	} else if mode == 2 {
-		// regenerate mode
+		// regenerate mode. will  update EOL
 		url.RegeneratesCounter += 1
+		url.EOL = time.Now().Add(time.Duration(7776000) * time.Second) // life time = 90 days = 90d*24h*60m*60s = 7776000 s
 	} else {
 		url.VisitsCounter = 0
 		url.RegeneratesCounter = 0
+		url.EOL = time.Now().Add(time.Duration(7776000) * time.Second)
 	}
 
 	var err error = db.Debug().Model(&URL{}).Where("id = ?", url.ID).Updates(URL{
@@ -191,32 +199,6 @@ func (url *URL) UpdateURL(db *gorm.DB, mode int) (*URL, error) {
 }
 
 /*
-	Update required URL entity by ID : INCREMENT  VISITS COUNTER
-	Increment REGENERATIONS COUNTER
-*/
-func (url *URL) IncrementURLRegenerations(db *gorm.DB, encodedURL string) (*URL, error) {
-
-	existingURL := URL{}
-	var err error = db.Debug().Model(&URL{}).Where("encoded_url = ?", encodedURL).Take(&existingURL).Error
-	if err != nil {
-		return url, err
-	}
-
-	err = db.Debug().Model(&URL{}).Where("id = ?", existingURL.ID).Updates(URL{
-		OriginalURL:        existingURL.OriginalURL,
-		EncodedURL:         existingURL.EncodedURL,
-		EOL:                existingURL.EOL,
-		VisitsCounter:      existingURL.VisitsCounter,
-		RegeneratesCounter: existingURL.RegeneratesCounter + 1,
-	}).Error
-	if err != nil {
-		return &URL{}, err
-	}
-
-	return url, nil
-}
-
-/*
 	Delete URL note by ID
 */
 func (p *URL) DeleteURL(db *gorm.DB, pid uuid.UUID) (int64, error) {
@@ -224,7 +206,7 @@ func (p *URL) DeleteURL(db *gorm.DB, pid uuid.UUID) (int64, error) {
 
 	if db.Error != nil {
 		if gorm.IsRecordNotFoundError(db.Error) {
-			return 0, errors.New("URL Entity  not found")
+			return 0, errors.New("URL Entity not found in database")
 		}
 		return 0, db.Error
 	}
